@@ -366,7 +366,7 @@ vec3 getCenter(int i, int j, int k) {
 
 void GridDataLSet::initialize(double dfltValue)
 {
-   cout << "ENTERS LSET INIT" << endl;
+   //cout << "ENTERS LSET INIT" << endl;
    mDfltValue = dfltValue;
    mMax[0] = theCellSize*theDim[0];
    mMax[1] = theCellSize*theDim[1];
@@ -374,7 +374,7 @@ void GridDataLSet::initialize(double dfltValue)
    mData.resize(theDim[0]*theDim[1]*theDim[2], false);
    std::fill(mData.begin(), mData.end(), mDfltValue);
 
-   double radius = 4.0;
+   double radius = 0.4;
    vec3 centerIndices(theDim[0]/2,theDim[1]/2,theDim[2]/2);
    vec3 centerPoint = getCenter(centerIndices[0],centerIndices[1],centerIndices[2]);
    for(int k = 0; k < theDim[2]; k++) {
@@ -389,11 +389,11 @@ void GridDataLSet::initialize(double dfltValue)
 			   int stack = j*theDim[0]*theDim[2];
 			   mData[col+row+stack] = signedDistance;
 
-			   cout << signedDistance << " ";
+			   //cout << signedDistance << " ";
 
 		   }
 	   }
-	   cout << endl;
+	   //cout << endl;
    }
 
 
