@@ -14,7 +14,7 @@
 
 // Globals:
 WaterMACGrid target;
-
+bool WaterMACGrid::theDisplaySignedDistance = false;
 
 
 WaterMACGrid::WaterMACGrid()
@@ -670,6 +670,7 @@ bool WaterMACGrid::conjugateGradient(const GridDataMatrix & A, GridData & p, con
 void WaterMACGrid::draw(const Camera& c)
 {   
    drawWireGrid();
+   if (theDisplaySignedDistance) drawSignedDistance();
    if (theDisplayVel) drawVelocities();   
    if (theRenderMode == CUBES) drawSmokeCubes(c);
    else drawSmoke(c);
@@ -1011,9 +1012,30 @@ void WaterMACGrid::drawCube(const WaterMACGrid::Cube& cube)
    glPopMatrix();
 }
 
+void WaterMACGrid::drawSignedDistance()
+{
+   // Draw line at each center
+   //glColor4f(0.0, 1.0, 0.0, 1.0); // Use this if you want the lines to be a single color.
+   glEnable(GL_POINT_SMOOTH);
+      FOR_EACH_CELL
+      {
+         vec3 pos = getCenter(i,j,k);
+         vec3 vel = getVelocity(pos);
+		 double signedDistance = mLSet(i,j,k);
+		 float pointSize = 1.5 * abs(signedDistance);
+		 
+		 glPointSize(pointSize); // must be outside of begin/end pair
+		 glBegin(GL_POINTS);
+		 glVertex3dv(pos.n);
+         if (signedDistance > 0.0)
+		   glColor4f(1.0, 0.0, 0.0, 1.0);
+         else
+		   glColor4f(0.0, 0.0, 1.0, 1.0);
 
+		 glEnd();
+      }
 
-
+}
 
 ///Non-functioning Methods for Water Sim
 

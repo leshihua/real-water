@@ -5,6 +5,9 @@
 
 class WaterMACGrid : public MACGrid {
 public:
+	// display mode for signed distance
+	static bool theDisplaySignedDistance;
+
 	// functions to override
 
 	void reset();
@@ -43,13 +46,12 @@ protected:
 	void drawCube(const MACGrid::Cube& c);
 	void drawFace(const MACGrid::Cube& c);
 	void drawVelocities();
+	void drawSignedDistance();
 	vec4 getRenderColor(int i, int j, int k);
 	vec4 getRenderColor(const vec3& pt);
 	void drawZSheets(bool backToFront);
 	void drawXSheets(bool backToFront);
 
-
-protected:
 	// level set signed distance
 	GridDataLSet mLSet;
 

@@ -21,7 +21,38 @@ MACGrid target;
 MACGrid::RenderMode MACGrid::theRenderMode = SHEETS;
 bool MACGrid::theDisplayVel = false;
 
+#define FOR_EACH_CELL \
+   for(int k = 0; k < theDim[MACGrid::Z]; k++)  \
+      for(int j = 0; j < theDim[MACGrid::Y]; j++) \
+         for(int i = 0; i < theDim[MACGrid::X]; i++) 
 
+#define FOR_EACH_CELL_REVERSE \
+   for(int k = theDim[MACGrid::Z] - 1; k >= 0; k--)  \
+      for(int j = theDim[MACGrid::Y] - 1; j >= 0; j--) \
+         for(int i = theDim[MACGrid::X] - 1; i >= 0; i--) 
+
+#define FOR_EACH_FACE \
+   for(int k = 0; k < theDim[MACGrid::Z]+1; k++) \
+      for(int j = 0; j < theDim[MACGrid::Y]+1; j++) \
+         for(int i = 0; i < theDim[MACGrid::X]+1; i++) 
+
+#define FOR_EACH_FACE_X \
+   for(int k = 0; k < theDim[MACGrid::Z]; k++) \
+		for(int j = 0; j < theDim[MACGrid::Y]; j++) \
+			for(int i = 0; i < theDim[MACGrid::X]+1; i++) 
+
+#define FOR_EACH_FACE_Y \
+   for(int k = 0; k < theDim[MACGrid::Z]; k++) \
+		for(int j = 0; j < theDim[MACGrid::Y]+1; j++) \
+			for(int i = 0; i < theDim[MACGrid::X]; i++) 
+
+#define FOR_EACH_FACE_Z \
+   for(int k = 0; k < theDim[MACGrid::Z]+1; k++) \
+		for(int j = 0; j < theDim[MACGrid::Y]; j++) \
+			for(int i = 0; i < theDim[MACGrid::X]; i++) 
+
+#define PRINT_VELOCITY \
+	FOR_EACH_FACE { cout<<getVelocity(vec3(i,j,k))<<endl;}
 
 
 MACGrid::MACGrid()

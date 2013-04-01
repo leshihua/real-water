@@ -374,7 +374,7 @@ void GridDataLSet::initialize(double dfltValue)
    mData.resize(theDim[0]*theDim[1]*theDim[2], false);
    std::fill(mData.begin(), mData.end(), mDfltValue);
 
-   double radius = 0.4;
+   double radius = theDim[0]/4 * theCellSize;
    vec3 centerIndices(theDim[0]/2,theDim[1]/2,theDim[2]/2);
    vec3 centerPoint = getCenter(centerIndices[0],centerIndices[1],centerIndices[2]);
    for(int k = 0; k < theDim[2]; k++) {
@@ -384,6 +384,7 @@ void GridDataLSet::initialize(double dfltValue)
 			   double distFromCenter = (currentPoint - centerPoint).Length();
 			   double signedDistance = distFromCenter - radius;
 			   
+			   // code taken from (i,j,k) operator to grab place in mData
 			   int col = i;
 			   int row = k*theDim[0];
 			   int stack = j*theDim[0]*theDim[2];
