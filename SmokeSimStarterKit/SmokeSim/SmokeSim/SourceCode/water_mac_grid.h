@@ -19,7 +19,7 @@ public:
 	void addExternalForces(double dt);
 	void project(double dt);
 	void advectTemperature(double dt);
-	void advectDensity(double dt);
+	//void advectDensity(double dt);
 	void checkDivergence();
 
 protected:

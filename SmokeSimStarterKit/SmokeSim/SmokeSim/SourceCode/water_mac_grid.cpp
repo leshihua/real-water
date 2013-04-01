@@ -115,44 +115,87 @@ void WaterMACGrid::updateSources()
 
 void WaterMACGrid::advectVelocity(double dt)
 {	// TODO: Calculate new velocities and store in target.
+	bool USE_RK2 = true;
+	//Store velocities
 	target.mU = mU;
     target.mV = mV;
     target.mW = mW;
-
-	//NEW WAY
-	double halfCell = theCellSize/2;
-	FOR_EACH_FACE {
-		//OLD - WORKING WAY
-		vec3 posG = getCenter(i,j,k);
-
-		////World coordinates of X, Y, Z commponents velocities
-		vec3 posGx = vec3(i*theCellSize, j*theCellSize+halfCell, k*theCellSize+halfCell);
-		vec3 posGy = vec3(i*theCellSize+halfCell, j*theCellSize, k*theCellSize+halfCell);
-		vec3 posGz = vec3(i*theCellSize+halfCell, j*theCellSize+halfCell, k*theCellSize);
-		//vec3 xG = vec3(i,j-,k-0.5*theCellSize); 
-
-		vec3 u = getVelocity(posGx);
-		vec3 v = getVelocity(posGy);
-		vec3 w = getVelocity(posGz);
-
-		vec3 posPx = posGx-dt*u;
-		vec3 posPy = posGy-dt*v;
-		vec3 posPz = posGz-dt*v;
-
-		//Get interpolated values from the grid
-		vec3 tracedVel = vec3(getVelocityX(posPx), getVelocityY(posPy), getVelocityZ(posPz));	
-
-		//Update values in the target grid
-		target.mU(i,j,k) = tracedVel[0];
-		target.mV(i,j,k) = tracedVel[1];
-		target.mW(i,j,k) = tracedVel[2];
 		
+	if (USE_RK2) {
+	//RK2 Integration
+	double halfdt = 0.5 * dt;
+	//NEW WAY
+		double halfCell = theCellSize/2;
+		FOR_EACH_FACE {
+			////World coordinates of X, Y, Z commponents velocities
+			vec3 posGx = vec3(i*theCellSize, j*theCellSize+halfCell, k*theCellSize+halfCell);
+			vec3 posGy = vec3(i*theCellSize+halfCell, j*theCellSize, k*theCellSize+halfCell);
+			vec3 posGz = vec3(i*theCellSize+halfCell, j*theCellSize+halfCell, k*theCellSize);
+			//vec3 xG = vec3(i,j-,k-0.5*theCellSize); 
+
+			//Take half step to get mid-velocity
+			vec3 u = getVelocity(posGx);
+			vec3 v = getVelocity(posGy);
+			vec3 w = getVelocity(posGz);
+
+			vec3 posPx = posGx-0.5*dt*u;
+			vec3 posPy = posGy-0.5*dt*v;
+			vec3 posPz = posGz-0.5*dt*v;
+
+			//Use mid-velocity to take a step back from the original position
+			u = getVelocity(posPx);
+			v = getVelocity(posPy);
+			w = getVelocity(posPz);
+
+			posPx = posGx-dt*u;
+			posPy = posGy-dt*v;
+			posPz = posGz-dt*w;
+
+			//Get interpolated values from the grid
+			//vec3 halftracedVel = vec3(getVelocityX(posPx), getVelocityY(posPy), getVelocityZ(posPz));	
+
+			vec3 tracedVel = vec3(getVelocityX(posPx), getVelocityY(posPy), getVelocityZ(posPz));	
+			//Update values in the target grid
+			target.mU(i,j,k) = tracedVel[0];
+			target.mV(i,j,k) = tracedVel[1];
+			target.mW(i,j,k) = tracedVel[2];
+		}
 	}
-    // Then save the result to our object.
-    mU = target.mU;
-    mV = target.mV;
-    mW = target.mW;
-	//PRINT_VELOCITY
+	else {
+		//RK-1
+		double halfCell = theCellSize/2;
+		FOR_EACH_FACE {
+			//OLD - WORKING WAY
+			vec3 posG = getCenter(i,j,k);
+
+			//World coordinates of X, Y, Z commponents velocities
+			vec3 posGx = vec3(i*theCellSize, j*theCellSize+halfCell, k*theCellSize+halfCell);
+			vec3 posGy = vec3(i*theCellSize+halfCell, j*theCellSize, k*theCellSize+halfCell);
+			vec3 posGz = vec3(i*theCellSize+halfCell, j*theCellSize+halfCell, k*theCellSize);
+			//vec3 xG = vec3(i,j-,k-0.5*theCellSize); 
+
+			vec3 u = getVelocity(posGx);
+			vec3 v = getVelocity(posGy);
+			vec3 w = getVelocity(posGz);
+
+			vec3 posPx = posGx-dt*u;
+			vec3 posPy = posGy-dt*v;
+			vec3 posPz = posGz-dt*v;
+
+			//Get interpolated values from the grid
+			vec3 tracedVel = vec3(getVelocityX(posPx), getVelocityY(posPy), getVelocityZ(posPz));	
+
+			//Update values in the target grid
+			target.mU(i,j,k) = tracedVel[0];
+			target.mV(i,j,k) = tracedVel[1];
+			target.mW(i,j,k) = tracedVel[2];	
+		}
+	}
+
+	// Then save the result to our object.
+	mU = target.mU;
+	mV = target.mV;
+	mW = target.mW;
 }
 
 void WaterMACGrid::computeBuoyancy(double dt)
@@ -287,7 +330,7 @@ void WaterMACGrid::computeVorticityConfinement(double dt)
 }
 
 void WaterMACGrid::computeGravity(double dt) {
-		// TODO: Calculate bouyancy and store in target.
+		// TODO: Calculate Gravity and store in target.
 	double halfCell = (theCellSize/2);
 	target.mV = mV;
 	//Perform bouyancy
@@ -310,6 +353,8 @@ void WaterMACGrid::computeGravity(double dt) {
 
 void WaterMACGrid::addExternalForces(double dt)
 {
+
+	//computeBuoyancy(dt);
 	computeGravity(dt);
 	computeVorticityConfinement(dt);
 }
@@ -656,10 +701,10 @@ void WaterMACGrid::drawVelocities()
 
 vec4 WaterMACGrid::getRenderColor(int i, int j, int k)
 {
-
+	//Realistic Water color 0.223, 0.344, 0.473, color1.n[3]
 	// Modify this if you want to change the smoke color, or modify it based on other smoke properties.
     double value = mD(i, j, k); 
-    return vec4(1.0, 1.0, 1.0, value);
+    return vec4(0.223, 0.344, 0.473, value);
 
 }
 
@@ -705,10 +750,12 @@ void WaterMACGrid::drawZSheets(bool backToFront)
             vec4 color1 = getRenderColor(pos1);
             vec4 color2 = getRenderColor(pos2);
 
-            glColor4dv(color1.n);
+           // glColor4dv(color1.n);
+			glColor4d(0.223, 0.344, 0.473, color1.n[3]);
             glVertex3dv(pos1.n);
 
-            glColor4dv(color2.n);
+           // glColor4dv(color2.n);
+			glColor4d(0.223, 0.344, 0.473, color2.n[3]);
             glVertex3dv(pos2.n);
          } 
          glEnd();
@@ -723,10 +770,14 @@ void WaterMACGrid::drawZSheets(bool backToFront)
             vec4 color1 = getRenderColor(pos1);
             vec4 color2 = getRenderColor(pos2);
 
-            glColor4dv(color1.n);
+           // glColor4dv(color1.n);
+			glColor4d(0.223, 0.344, 0.473, color1.n[3]);
+           
             glVertex3dv(pos1.n);
 
-            glColor4dv(color2.n);
+          //  glColor4dv(color2.n);
+			glColor4d(0.223, 0.344, 0.473, color2.n[3]);
+           
             glVertex3dv(pos2.n);
          } 
          glEnd();
@@ -768,11 +819,14 @@ void WaterMACGrid::drawXSheets(bool backToFront)
             vec4 color1 = getRenderColor(pos1);
             vec4 color2 = getRenderColor(pos2);
 
-            glColor4dv(color1.n);
+           // glColor4dv(color1.n);
+			glColor4d(0.223, 0.344, 0.473, color1.n[3]);
+           
             glVertex3dv(pos1.n);
 
-            glColor4dv(color2.n);
-            glVertex3dv(pos2.n);
+           // glColor4dv(color2.n);
+            glColor4d(0.223, 0.344, 0.473, color2.n[3]);
+			glVertex3dv(pos2.n);
          } 
          glEnd();
          j+=stepsize;
@@ -786,10 +840,14 @@ void WaterMACGrid::drawXSheets(bool backToFront)
             vec4 color1 = getRenderColor(pos1);
             vec4 color2 = getRenderColor(pos2);
 
-            glColor4dv(color1.n);
+            //glColor4dv(color1.n);
+			glColor4d(0.223, 0.344, 0.473, color1.n[3]);
+           
             glVertex3dv(pos1.n);
 
-            glColor4dv(color2.n);
+            //glColor4dv(color2.n);
+			glColor4d(0.223, 0.344, 0.473, color2.n[3]);
+           
             glVertex3dv(pos2.n);
          } 
          glEnd();
@@ -907,7 +965,9 @@ void WaterMACGrid::drawFace(const WaterMACGrid::Cube& cube)
 
 void WaterMACGrid::drawCube(const WaterMACGrid::Cube& cube)
 {
+	
    glColor4dv(cube.color.n);
+
    glPushMatrix();
       glTranslated(cube.pos[0], cube.pos[1], cube.pos[2]);      
       glScaled(theCellSize, theCellSize, theCellSize);
@@ -958,8 +1018,9 @@ void WaterMACGrid::drawCube(const WaterMACGrid::Cube& cube)
 ///Non-functioning Methods for Water Sim
 
 void WaterMACGrid::advectTemperature(double dt) {
-	assert("we don't advect temperature in a water sim!");
+	//this->MACGrid::advectTemperature(dt);	
 }
-void WaterMACGrid::advectDensity(double dt) {
-	assert("we don't advect density in a water sim!");
-}
+
+//void WaterMACGrid::advectDensity(double dt) {
+//	assert("we don't advect density in a water sim!");
+//}
