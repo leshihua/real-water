@@ -6,11 +6,16 @@
 #include <cmath>
 #include "open_gl_headers.h"
 #include "basic_math.h"
+#include "water_sim.h"
 
 // Geometry and whatnot
 SmokeSim theSmokeSim;
 Camera theCamera;
 mmc::FpsTracker theFpsTracker;
+
+//Our Water Sim
+bool USE_WATER_SIM = true;
+WaterSim theWaterSim;
 
 // UI Helpers
 int lastX = 0, lastY = 0;
@@ -99,10 +104,24 @@ void onKeyboardCb(unsigned char key, int x, int y)
    else if (key == '0') MACGrid::theRenderMode = MACGrid::CUBES;
    else if (key == '1') MACGrid::theRenderMode = MACGrid::SHEETS;
    else if (key == 'v') MACGrid::theDisplayVel = !MACGrid::theDisplayVel;
-   else if (key == 'r') theSmokeSim.setRecording(!theSmokeSim.isRecording(), savedWidth, savedHeight);
+   else if (key == 'r') {
+	    if (USE_WATER_SIM) {
+			theWaterSim.setRecording(!theWaterSim.isRecording(), savedWidth, savedHeight);
+		}
+		else {
+			theSmokeSim.setRecording(!theSmokeSim.isRecording(), savedWidth, savedHeight);
+		}
+   }
    else if (key == '>') isRunning = true;
    else if (key == '=') isRunning = false;
-   else if (key == '<') theSmokeSim.reset();
+   else if (key == '<') {
+	    if (USE_WATER_SIM) {
+			theWaterSim.reset();
+		}
+		else {
+			theSmokeSim.reset();
+		}
+   }
    else if (key == 27) exit(0); // ESC Key
    glutPostRedisplay();
 }
@@ -112,7 +131,13 @@ void onMenuCb(int value)
    switch (value)
    {
    case -1: exit(0);
-   case -6: theSmokeSim.reset(); break;
+   case -6: 
+	   if (USE_WATER_SIM) {
+		   theWaterSim.reset();
+	   } else {
+		   theSmokeSim.reset();
+	   }   
+	   break;
    default: onKeyboardCb(value, 0, 0); break;
    }
 }
@@ -123,7 +148,14 @@ void onKeyboardSpecialCb(int key, int x, int y)
 
 void onTimerCb(int value)
 {
-   if (isRunning) theSmokeSim.step();
+   if (isRunning) {
+	   if (USE_WATER_SIM) {
+		   theWaterSim.step();
+	   }
+	   else {
+		   theSmokeSim.step();
+	   }   
+   }
    glutTimerFunc(theMillisecondsPerFrame, onTimerCb, 0);
    glutPostRedisplay();
 }
@@ -158,10 +190,13 @@ void drawOverlay()
      glLoadIdentity();
      glRasterPos2f(0.01, 0.01);
      
-     char info[1024];
-     sprintf(info, "Framerate: %3.1f  |  Frame: %u  |  %s", 
-         theFpsTracker.fpsAverage(), theSmokeSim.getTotalFrames(),
-         theSmokeSim.isRecording()? "Recording..." : "");
+     char info[2048];
+	 int totalFrames = (USE_WATER_SIM) ? theWaterSim.getTotalFrames() : theSmokeSim.getTotalFrames();
+	 bool isRecording = (USE_WATER_SIM) ? theWaterSim.isRecording() : theSmokeSim.isRecording(); 
+
+	 sprintf(info, " %s | Framerate: %3.1f  |  Frame: %u  |  %s", 
+         (USE_WATER_SIM) ? "Water Simulation" : "Smoke Simulation", theFpsTracker.fpsAverage(), totalFrames,
+         isRecording ? "Recording..." : "");
  
      for (unsigned int i = 0; i < strlen(info); i++)
      {
@@ -178,7 +213,12 @@ void onDrawCb()
 	// Draw Scene and overlay
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	theCamera.draw();
-	theSmokeSim.draw(theCamera);
+	if (USE_WATER_SIM) {
+		theWaterSim.draw(theCamera);
+	}
+	else { 
+		theSmokeSim.draw(theCamera);
+	}
 	drawOverlay();
 	glutSwapBuffers();
 }
@@ -208,7 +248,7 @@ int main(int argc, char **argv)
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInitWindowSize(640, 480);
     glutInitWindowPosition(100, 100);
-    glutCreateWindow("Fluid Simulation - CIS563");
+    glutCreateWindow("Fluid Simulation - CIS 563 Final Project");
     glutDisplayFunc(onDrawCb);
     glutKeyboardFunc(onKeyboardCb);
     glutSpecialFunc(onKeyboardSpecialCb);
