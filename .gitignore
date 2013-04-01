@@ -11,3 +11,10 @@
 *.lai
 *.la
 *.a
+
+#Files to ignore
+ipch/*
+*/Release/*
+*/Debug/*
+*.sdf
+*.opensdf
