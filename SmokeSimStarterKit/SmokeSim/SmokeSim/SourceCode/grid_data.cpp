@@ -342,3 +342,59 @@ vec3 GridDataZ::worldToSelf(const vec3& pt) const
    out[2] = min(max(0.0, pt[2]), mMax[2]);
    return out;
 }
+
+GridDataLSet::GridDataLSet() : GridData()
+{
+}
+
+GridDataLSet::~GridDataLSet()
+{
+}
+
+// helper for level set init
+vec3 getCenter(int i, int j, int k) {
+	double xstart = theCellSize/2.0;
+	double ystart = theCellSize/2.0;
+	double zstart = theCellSize/2.0;
+			   
+	double x = xstart + i*theCellSize;
+	double y = ystart + j*theCellSize;
+	double z = zstart + k*theCellSize;
+
+	return vec3(x,y,z);
+}
+
+void GridDataLSet::initialize(double dfltValue)
+{
+   cout << "ENTERS LSET INIT" << endl;
+   mDfltValue = dfltValue;
+   mMax[0] = theCellSize*theDim[0];
+   mMax[1] = theCellSize*theDim[1];
+   mMax[2] = theCellSize*theDim[2];
+   mData.resize(theDim[0]*theDim[1]*theDim[2], false);
+   std::fill(mData.begin(), mData.end(), mDfltValue);
+
+   double radius = 4.0;
+   vec3 centerIndices(theDim[0]/2,theDim[1]/2,theDim[2]/2);
+   vec3 centerPoint = getCenter(centerIndices[0],centerIndices[1],centerIndices[2]);
+   for(int k = 0; k < theDim[2]; k++) {
+	   for(int j = 0; j < theDim[1]; j++) {
+		   for(int i = 0; i < theDim[0]; i++) {
+			   vec3 currentPoint = getCenter(i,j,k);
+			   double distFromCenter = (currentPoint - centerPoint).Length();
+			   double signedDistance = distFromCenter - radius;
+			   
+			   int col = i;
+			   int row = k*theDim[0];
+			   int stack = j*theDim[0]*theDim[2];
+			   mData[col+row+stack] = signedDistance;
+
+			   cout << signedDistance << " ";
+
+		   }
+	   }
+	   cout << endl;
+   }
+
+
+}

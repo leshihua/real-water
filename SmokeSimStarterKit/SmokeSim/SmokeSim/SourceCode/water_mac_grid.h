@@ -6,10 +6,13 @@
 class WaterMACGrid : public MACGrid {
 public:
 	// functions to override
+	void reset();
 	void advectTemperature(double dt);
 	void advectDensity(double dt);
 
-private:
+protected:
+	// level set signed distance
+	GridDataLSet mLSet;
 
 };
 

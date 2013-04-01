@@ -89,4 +89,12 @@ public:
    virtual vec3 worldToSelf(const vec3& pt) const;
 };
 
+class GridDataLSet : public GridData
+{
+public:
+   GridDataLSet();
+   virtual ~GridDataLSet();
+   virtual void initialize(double dfltValue = 0.0);
+};
+
 #endif

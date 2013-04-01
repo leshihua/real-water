@@ -5,7 +5,7 @@
 #ifndef WaterSim_H_
 #define WaterSim_H_
 
-#include "mac_grid.h"
+#include "water_mac_grid.h"
 
 class Camera;
 class WaterSim
@@ -27,7 +27,7 @@ protected:
    virtual void grabScreen();
 
 protected:
-	MACGrid mGrid;
+	WaterMACGrid mGrid;
 	bool mRecordEnabled;
 	int mFrameNum;
 	int mTotalFrameNum;
