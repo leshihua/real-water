@@ -104,6 +104,7 @@ void onKeyboardCb(unsigned char key, int x, int y)
    else if (key == '0') MACGrid::theRenderMode = MACGrid::CUBES;
    else if (key == '1') MACGrid::theRenderMode = MACGrid::SHEETS;
    else if (key == 'v') MACGrid::theDisplayVel = !MACGrid::theDisplayVel;
+   else if (key == 'l') WaterMACGrid::theDisplaySignedDistance = !WaterMACGrid::theDisplaySignedDistance;
    else if (key == 'r') {
 	    if (USE_WATER_SIM) {
 			theWaterSim.setRecording(!theWaterSim.isRecording(), savedWidth, savedHeight);
