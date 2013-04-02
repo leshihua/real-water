@@ -115,7 +115,7 @@ void WaterMACGrid::updateSources()
 		mU(12,20,0) = 10.2;
 }
 
-void WaterMACGrid::advectSignedDistance(double dt) {
+void WaterMACGrid::advectSignedDistances(double dt) {
 	target.mLSet = mLSet;
 	
 	FOR_EACH_CELL {
