@@ -74,8 +74,8 @@ void WaterMACGrid::updateSources()
 	    //Top Right Corner
 		mU(23,24,0) = -3.0;
 		mU(24,25,0) = -3.0;
-		mV(23,24,0) = -3.0;
-		mV(24,25,0) = -3.0;
+		//mV(23,24,0) = -3.0;
+		//mV(24,25,0) = -3.0;
 
 		//Bottom Mid Densities & Temp
 		mD(17,0,0) = 1.5;
@@ -91,17 +91,18 @@ void WaterMACGrid::updateSources()
 		mU(23,14,0) = -10.0;
 		mU(24,15,0) = -10.0;
 
-		mV(24,20,0) = -20;
+	/*	mV(24,20,0) = -20;
 		mV(24,19,0) = -20;
 		mV(24, 18,0)=-20;
+	*/
 
 		mD(24,20,0) = 1.1;
 	
 		//Mid Left
 		mU(20,11,0) = -3.0;
 		mU(21,11,0) = -3.0;
-		mV(20,11,0) = -1.0;
-		mV(21,11,0) = -1.0;
+		//mV(20,11,0) = -1.0;
+		//mV(21,11,0) = -1.0;
 
 		//Lower Left Side
 		mD(2,10,0) = 1.5;
@@ -511,7 +512,7 @@ void WaterMACGrid::project(double dt)
 	GridDataMatrix A = this->AMatrix;
 
 	// Solving vars
-	int maxIterations = 400;
+	int maxIterations = 300;
 	double tolerance = 0.001;
 
 	// 3. Solve for p - store in target.mP (pressure)
@@ -524,17 +525,30 @@ void WaterMACGrid::project(double dt)
 	//Constant Multiplier
 	double m = dt/rho;
 
+
+
 	//Update vels using target.mP
 	//u_n+1 = u_n -(dt*rho)*deltaP
 	//cout<<currD<<endl;
+
+	//USE AIR CELLS for fluids
+	bool USE_AIR_CELLS = true;
 	// X FACES
-	FOR_EACH_FACE_X {  	
+	FOR_EACH_FACE_X {  
 		//Make sure we aren't on boundaries
 		if (i > 0 && i < theDim[WaterMACGrid::X]) {
 			//Update X-vel using Pressure gradient in X
 			double currP = mP(i, j, k);
 			double prevP = mP(i-1,j,k);
 
+			//Level Set Handling
+			double currSDist = mLSet(i,j,k);
+			//Check if we have an air cell
+			if (currSDist > 0 && USE_AIR_CELLS) {
+				double prevSDist = mLSet(i-1, j, k);
+				double theta = fabs(prevSDist/(prevSDist-currSDist));
+				currP = ((1-theta)*prevP)/theta;
+			}
 			double dPX = (m*(currP - prevP))/deltaX;
 			target.mU(i, j, k) = mU(i,j,k) - dPX;
 		}
@@ -543,6 +557,8 @@ void WaterMACGrid::project(double dt)
 			target.mU(i,j,k) = 0;
 		}
 	}
+	//TODO: Add case for Solid boundaries
+
 	// Y FACES
 	FOR_EACH_FACE_Y {
 			
@@ -551,6 +567,15 @@ void WaterMACGrid::project(double dt)
 			double currP = mP(i,j,k);
 			double prevP = mP(i,j-1,k);
 			
+			//Level Set Handling
+			double currSDist = mLSet(i,j,k);
+			//Check if we have an air cell
+			if (currSDist > 0 && USE_AIR_CELLS) {
+				double prevSDist = mLSet(i, j-1, k);
+				double theta = fabs(prevSDist/(prevSDist-currSDist));
+				currP = ((1-theta)*prevP)/theta;
+			}
+
 			//Udpdate Y-vel using Pressure Gradient in Y
 			double dPY = (m*(currP - prevP))/deltaY; ;
 			target.mV(i, j, k) = mV(i,j,k) - dPY;
@@ -568,6 +593,15 @@ void WaterMACGrid::project(double dt)
 			double currP = mP(i,j,k);//mP(i, j, k);
 			double prevP = mP(i,j,k-1);
 			
+			//Level Set Handling
+			double currSDist = mLSet(i,j,k);
+			//Check if we have an air cell
+			if (currSDist > 0 && USE_AIR_CELLS) {
+				double prevSDist = mLSet(i, j, k-1);
+				double theta = fabs(prevSDist/(prevSDist-currSDist));
+				currP = ((1-theta)*prevP)/theta;
+			}
+
 			//Update Z-vel using Pressure Gradient in Z
 			double dPZ = (m*(currP - prevP))/deltaZ;
 			target.mW(i, j, k) = mW(i,j,k) - dPZ;
@@ -1126,6 +1160,25 @@ void WaterMACGrid::drawSignedDistance()
 
 void WaterMACGrid::advectTemperature(double dt) {
 	//this->MACGrid::advectTemperature(dt);	
+	target.mT = mT;
+	FOR_EACH_CELL {
+		//Current position
+		vec3 xG = getCenter(i, j, k);
+		//Velocity at position
+		vec3 vel = getVelocity(xG);
+		//Previous Position at half-step
+		vec3 xP = xG-0.5*dt*vel;
+
+		//Now take the full-step
+		vel = getVelocity(xP);
+		xP = xP-dt*vel;
+
+		double temp = getDensity(xP);
+		target.mT(i, j, k) = temp;
+		
+	}
+	mT = target.mT;
+	//assert("we don't advect density in a water sim!");
 }
 
 //void WaterMACGrid::advectDensity(double dt) {
