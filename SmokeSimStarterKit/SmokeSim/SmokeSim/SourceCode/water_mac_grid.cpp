@@ -115,7 +115,27 @@ void WaterMACGrid::updateSources()
 		mU(12,20,0) = 10.2;
 }
 
+void WaterMACGrid::advectSignedDistances(double dt) {
+	target.mLSet = mLSet;
+	
+	FOR_EACH_CELL {
+		//Current position
+		vec3 xG = getCenter(i, j, k);
+		//Velocity at position
+		vec3 vel = getVelocity(xG);
+		//Previous Position at half-step
+		vec3 xP = xG-0.5*dt*vel;
 
+		//Now take the full-step
+		vel = getVelocity(xP);
+		xP = xP-dt*vel;
+
+		double dist = getSignedDistance(xP);
+		target.mLSet(i, j, k) = dist;
+		
+	}
+	mLSet = target.mLSet;
+}
 
 void WaterMACGrid::advectVelocity(double dt)
 {	// TODO: Calculate new velocities and store in target.
