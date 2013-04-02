@@ -26,6 +26,9 @@ public:
 	//void advectDensity(double dt);
 	void checkDivergence();
 
+	//Advect the signed distances
+	void advectSignedDistances(double dt);
+
 protected:
 	// Setup:
 	void initialize();
