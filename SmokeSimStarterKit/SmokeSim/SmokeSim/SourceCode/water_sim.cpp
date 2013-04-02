@@ -26,16 +26,20 @@ void WaterSim::step()
    // Step0: Gather user forces
    mGrid.updateSources();
 
-   // Step1: Calculate new velocities
-   mGrid.advectVelocity(dt);
-   mGrid.addExternalForces(dt);
-   mGrid.project(dt);
+   //TODO: Velocity extrapolation
+   //TODO: Level Set Reinitialization
 
+   // Step1: Calculate new velocities
+   mGrid.advectSignedDistances(dt);
+   mGrid.advectVelocity(dt);
    // Step2: Calculate new temperature
    mGrid.advectTemperature(dt);
-
    // Step3: Calculate new density 
-    mGrid.advectDensity(dt);
+   mGrid.advectDensity(dt);
+   mGrid.addExternalForces(dt);
+   //TODO: Level Set Remeshing
+   mGrid.project(dt);
+  
 	
 	mTotalFrameNum++;
 }

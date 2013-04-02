@@ -22,8 +22,11 @@ public:
 	void addExternalForces(double dt);
 	void project(double dt);
 	void advectTemperature(double dt);
+	void advectDensity(double dt);
 	//void advectDensity(double dt);
 	void checkDivergence();
+	
+	void advectSignedDistances(double dt);
 
 protected:
 	// Setup:
@@ -38,6 +41,9 @@ protected:
 	bool conjugateGradient(const GridDataMatrix & A, GridData & p, const GridData & d, int maxIterations, double tolerance);
 	// Sets up the A matrix:
 	void setUpAMatrix();
+
+	
+	double getSignedDistance(const vec3& pt);
 
 	//Drawing:
 	void drawWireGrid();
@@ -54,6 +60,7 @@ protected:
 
 	// level set signed distance
 	GridDataLSet mLSet;
+
 
 };
 
