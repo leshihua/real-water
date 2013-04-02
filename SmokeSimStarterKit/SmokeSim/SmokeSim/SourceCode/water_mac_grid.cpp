@@ -1172,9 +1172,9 @@ void WaterMACGrid::drawSignedDistance()
 		 glBegin(GL_POINTS);
 		 glVertex3dv(pos.n);
          if (signedDistance > 0.0)
-		   glColor4f(1.0, 0.0, 0.0, 1.0);
+		   glColor4f(0.4, 0.0, 0.6, 1.0);
          else
-		   glColor4f(0.0, 0.0, 1.0, 1.0);
+		   glColor4f(0.0, 0.8, 0.4, 1.0);
 
 		 glEnd();
       }
