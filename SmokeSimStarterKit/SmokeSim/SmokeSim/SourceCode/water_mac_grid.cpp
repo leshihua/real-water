@@ -14,7 +14,6 @@
 
 // Globals:
 WaterMACGrid target;
-
 bool WaterMACGrid::theDisplaySignedDistance = false;
 
 
@@ -112,28 +111,6 @@ void WaterMACGrid::updateSources()
 		mU(10,18,0) = 10.2;
 		mU(11,19,0) = 10.1;
 		mU(12,20,0) = 10.2;
-}
-
-void WaterMACGrid::advectSignedDistances(double dt) {
-	target.mLSet = mLSet;
-	
-	FOR_EACH_CELL {
-		//Current position
-		vec3 xG = getCenter(i, j, k);
-		//Velocity at position
-		vec3 vel = getVelocity(xG);
-		//Previous Position at half-step
-		vec3 xP = xG-0.5*dt*vel;
-
-		//Now take the full-step
-		vel = getVelocity(xP);
-		xP = xP-dt*vel;
-
-		double dist = getSignedDistance(xP);
-		target.mLSet(i, j, k) = dist;
-		
-	}
-	mLSet = target.mLSet;
 }
 
 void WaterMACGrid::advectVelocity(double dt)
@@ -362,12 +339,12 @@ void WaterMACGrid::computeGravity(double dt) {
 			//Apply buoyancy force to Y-component of velocity
 		
 			double mass = 1.0;
-			double gravity = 9.8;
+			double gravity = -9.8;
 			//FG=mg  v = (FG*t)/m
 			double VgY = ((gravity*dt)/mass);				
 
 			//Use Force, FbY, to get y-velocity comp. and add to this y-velocity 
-			target.mV(i,j,k) = mV(i,j,k) - dt*VgY;
+			target.mV(i,j,k) = mV(i,j,k) + dt*VgY;
 		}
 	}
    // Then save the result to our object.
@@ -380,6 +357,91 @@ void WaterMACGrid::addExternalForces(double dt)
 	//computeBuoyancy(dt);
 	computeGravity(dt);
 	computeVorticityConfinement(dt);
+}
+
+// Helper to cut down on if checks. Checks sign of signed distance
+bool isInside(double signedDist) {
+	if (signedDist < 0.0) return true;
+	else return false;
+}
+
+
+SignedDistCell::SignedDistCell() {
+	
+}
+
+SignedDistCell::~SignedDistCell() {
+
+}
+
+SignedDistCell::SignedDistCell(int i, int j, int k, double dist) {
+	I = i;
+	J = j;
+	K = k;
+	signedDist = dist;
+}
+
+void WaterMACGrid::reinitializeLevelSet() {
+	// Fast Marching Method: mark surface cells as known, 
+	// add unknown neighbors to minHeap
+
+	std::priority_queue<SignedDistCell, std::vector<SignedDistCell>, GreaterDistance> minHeap;
+	GridData known;
+	known.initialize(0.0);
+
+	// Determines initial cells along the surface and marks as "known"
+	// and marks non-surface cells as "unknown" by adding to minHeap
+	FOR_EACH_CELL {
+		bool currentSign = isInside(mLSet(i,j,k));
+		
+		if (i > 0) {
+			bool neighborSign = isInside(mLSet(i-1,j,k));
+			if (neighborSign != currentSign) {
+				known(i,j,k) = 1.0;
+				known(i-1,j,k) = 1.0;
+			}
+		}
+		if (i < theDim[0])  {
+			bool neighborSign = isInside(mLSet(i+1,j,k));
+			if (neighborSign != currentSign) {
+				known(i,j,k) = 1.0;
+				known(i+1,j,k) = 1.0;
+			}
+		}
+		if (j > 0) {
+			bool neighborSign = isInside(mLSet(i,j-1,k));
+			if (neighborSign != currentSign) {
+				known(i,j,k) = 1.0;
+				known(i,j-1,k) = 1.0;
+			}
+		}
+		if (j < theDim[1])  {
+			bool neighborSign = isInside(mLSet(i,j+1,k));
+			if (neighborSign != currentSign) {
+				known(i,j,k) = 1.0;
+				known(i,j+1,k) = 1.0;
+			}
+		}
+		if (k > 0) {
+			bool neighborSign = isInside(mLSet(i,j,k-1));
+			if (neighborSign != currentSign) {
+				known(i,j,k) = 1.0;
+				known(i,j,k-1) = 1.0;
+			}
+		}
+		if (k < theDim[2])  {
+			bool neighborSign = isInside(mLSet(i,j,k+1));
+			if (neighborSign != currentSign) {
+				known(i,j,k) = 1.0;
+				known(i,j,k+1) = 1.0;
+			}
+		}
+
+	}
+
+
+
+
 }
 
 void WaterMACGrid::project(double dt)
@@ -688,10 +750,6 @@ bool WaterMACGrid::conjugateGradient(const GridDataMatrix & A, GridData & p, con
 
 }
 
-
-double WaterMACGrid::getSignedDistance(const vec3& pt) {
-	return mLSet.interpolate(pt);
-}
 
 /////////////////////////////////////////////////////////////////////
 void WaterMACGrid::draw(const Camera& c)
@@ -1050,63 +1108,26 @@ void WaterMACGrid::drawSignedDistance()
          vec3 vel = getVelocity(pos);
 		 double signedDistance = mLSet(i,j,k);
 		 float pointSize = 1.5 * abs(signedDistance);
-
+		 
 		 glPointSize(pointSize); // must be outside of begin/end pair
 		 glBegin(GL_POINTS);
 		 glVertex3dv(pos.n);
          if (signedDistance > 0.0)
-		   glColor4f(0.4, 0.0, 0.4, 1.0);
+		   glColor4f(1.0, 0.0, 0.0, 1.0);
          else
-		   glColor4f(0.8, 0.8, 0.0, 1.0);
+		   glColor4f(0.0, 0.0, 1.0, 1.0);
 
 		 glEnd();
       }
 
 }
 
-
 ///Non-functioning Methods for Water Sim
+
 void WaterMACGrid::advectTemperature(double dt) {
-	return;
-	target.mT = mT;
-	FOR_EACH_CELL {
-		//Current position
-		vec3 xG = getCenter(i, j, k);
-		//Velocity at position
-		vec3 vel = getVelocity(xG);
-		//Previous Position at half-step
-		vec3 xP = xG-0.5*dt*vel;
-
-		//Now take the full-step
-		vel = getVelocity(xP);
-		xP = xP-dt*vel;
-
-		double temp = getDensity(xP);
-		target.mT(i, j, k) = temp;
-		
-	}
-	mT = target.mT;
-	//assert("we don't advect density in a water sim!");
+	//this->MACGrid::advectTemperature(dt);	
 }
 
-void WaterMACGrid::advectDensity(double dt) {
-	target.mD = mD;
-	FOR_EACH_CELL {
-		//Current position
-		vec3 xG = getCenter(i, j, k);
-		//Velocity at position
-		vec3 vel = getVelocity(xG);
-		//Previous Position at half-step
-		vec3 xP = xG-0.5*dt*vel;
-
-		//Now take the full-step
-		vel = getVelocity(xP);
-		xP = xP-dt*vel;
-
-		double density = getDensity(xP);
-		target.mD(i, j, k) = density;
-		
-	}
-	mD = target.mD;
-	//assert("we don't advect density in a water sim!");
-}
+//void WaterMACGrid::advectDensity(double dt) {
+//	assert("we don't advect density in a water sim!");
+//}
