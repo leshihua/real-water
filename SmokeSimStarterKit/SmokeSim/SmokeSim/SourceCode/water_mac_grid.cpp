@@ -75,8 +75,8 @@ void WaterMACGrid::updateSources()
 	    //Top Right Corner
 		mU(23,24,0) = -3.0;
 		mU(24,25,0) = -3.0;
-		mV(23,24,0) = -3.0;
-		mV(24,25,0) = -3.0;
+		//mV(23,24,0) = -3.0;
+		//mV(24,25,0) = -3.0;
 
 		//Bottom Mid Densities & Temp
 		mD(17,0,0) = 1.5;
@@ -92,17 +92,18 @@ void WaterMACGrid::updateSources()
 		mU(23,14,0) = -10.0;
 		mU(24,15,0) = -10.0;
 
-		mV(24,20,0) = -20;
+	/*	mV(24,20,0) = -20;
 		mV(24,19,0) = -20;
 		mV(24, 18,0)=-20;
+	*/
 
 		mD(24,20,0) = 1.1;
 	
 		//Mid Left
 		mU(20,11,0) = -3.0;
 		mU(21,11,0) = -3.0;
-		mV(20,11,0) = -1.0;
-		mV(21,11,0) = -1.0;
+		//mV(20,11,0) = -1.0;
+		//mV(21,11,0) = -1.0;
 
 		//Lower Left Side
 		mD(2,10,0) = 1.5;
@@ -449,7 +450,7 @@ void WaterMACGrid::project(double dt)
 	GridDataMatrix A = this->AMatrix;
 
 	// Solving vars
-	int maxIterations = 400;
+	int maxIterations = 300;
 	double tolerance = 0.001;
 
 	// 3. Solve for p - store in target.mP (pressure)
@@ -466,13 +467,20 @@ void WaterMACGrid::project(double dt)
 	//u_n+1 = u_n -(dt*rho)*deltaP
 	//cout<<currD<<endl;
 	// X FACES
-	FOR_EACH_FACE_X {  	
+	FOR_EACH_FACE_X {  
 		//Make sure we aren't on boundaries
 		if (i > 0 && i < theDim[WaterMACGrid::X]) {
 			//Update X-vel using Pressure gradient in X
 			double currP = mP(i, j, k);
 			double prevP = mP(i-1,j,k);
 
+			double currSDist = mLSet(i,j,k);
+			//Check if we have an air cell
+			if (currSDist > 0) {
+				double prevSDist = mLSet(i-1, j, k);
+				double theta = fabs(prevSDist/(prevSDist-currSDist));
+				currP = ((1-theta)*prevP)/theta;
+			}
 			double dPX = (m*(currP - prevP))/deltaX;
 			target.mU(i, j, k) = mU(i,j,k) - dPX;
 		}
@@ -481,6 +489,8 @@ void WaterMACGrid::project(double dt)
 			target.mU(i,j,k) = 0;
 		}
 	}
+	//TODO: Add case for Solid boundaries
+
 	// Y FACES
 	FOR_EACH_FACE_Y {
 			
@@ -1067,7 +1077,6 @@ void WaterMACGrid::drawSignedDistance()
 
 ///Non-functioning Methods for Water Sim
 void WaterMACGrid::advectTemperature(double dt) {
-	return;
 	target.mT = mT;
 	FOR_EACH_CELL {
 		//Current position
