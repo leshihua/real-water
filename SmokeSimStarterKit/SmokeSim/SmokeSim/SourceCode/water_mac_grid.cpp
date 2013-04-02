@@ -806,6 +806,9 @@ bool WaterMACGrid::conjugateGradient(const GridDataMatrix & A, GridData & p, con
 
 }
 
+double WaterMACGrid::getSignedDistance(const vec3& pt) {
+	return mLSet.interpolate(pt);
+}
 
 /////////////////////////////////////////////////////////////////////
 void WaterMACGrid::draw(const Camera& c)

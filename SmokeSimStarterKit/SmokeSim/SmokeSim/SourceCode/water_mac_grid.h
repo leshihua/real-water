@@ -59,6 +59,10 @@ protected:
 
 	// GridData for level set signed distance
 	GridDataLSet mLSet;
+	
+	double getSignedDistance(const vec3& pt);
+
+
 
 };
 
