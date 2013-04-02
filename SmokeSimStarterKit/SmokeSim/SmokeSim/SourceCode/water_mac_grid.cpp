@@ -463,9 +463,14 @@ void WaterMACGrid::project(double dt)
 	//Constant Multiplier
 	double m = dt/rho;
 
+
+
 	//Update vels using target.mP
 	//u_n+1 = u_n -(dt*rho)*deltaP
 	//cout<<currD<<endl;
+
+	//USE AIR CELLS for fluids
+	bool USE_AIR_CELLS = true;
 	// X FACES
 	FOR_EACH_FACE_X {  
 		//Make sure we aren't on boundaries
@@ -474,9 +479,10 @@ void WaterMACGrid::project(double dt)
 			double currP = mP(i, j, k);
 			double prevP = mP(i-1,j,k);
 
+			//Level Set Handling
 			double currSDist = mLSet(i,j,k);
 			//Check if we have an air cell
-			if (currSDist > 0) {
+			if (currSDist > 0 && USE_AIR_CELLS) {
 				double prevSDist = mLSet(i-1, j, k);
 				double theta = fabs(prevSDist/(prevSDist-currSDist));
 				currP = ((1-theta)*prevP)/theta;
@@ -499,6 +505,15 @@ void WaterMACGrid::project(double dt)
 			double currP = mP(i,j,k);
 			double prevP = mP(i,j-1,k);
 			
+			//Level Set Handling
+			double currSDist = mLSet(i,j,k);
+			//Check if we have an air cell
+			if (currSDist > 0 && USE_AIR_CELLS) {
+				double prevSDist = mLSet(i, j-1, k);
+				double theta = fabs(prevSDist/(prevSDist-currSDist));
+				currP = ((1-theta)*prevP)/theta;
+			}
+
 			//Udpdate Y-vel using Pressure Gradient in Y
 			double dPY = (m*(currP - prevP))/deltaY; ;
 			target.mV(i, j, k) = mV(i,j,k) - dPY;
@@ -516,6 +531,15 @@ void WaterMACGrid::project(double dt)
 			double currP = mP(i,j,k);//mP(i, j, k);
 			double prevP = mP(i,j,k-1);
 			
+			//Level Set Handling
+			double currSDist = mLSet(i,j,k);
+			//Check if we have an air cell
+			if (currSDist > 0 && USE_AIR_CELLS) {
+				double prevSDist = mLSet(i, j, k-1);
+				double theta = fabs(prevSDist/(prevSDist-currSDist));
+				currP = ((1-theta)*prevP)/theta;
+			}
+
 			//Update Z-vel using Pressure Gradient in Z
 			double dPZ = (m*(currP - prevP))/deltaZ;
 			target.mW(i, j, k) = mW(i,j,k) - dPZ;
