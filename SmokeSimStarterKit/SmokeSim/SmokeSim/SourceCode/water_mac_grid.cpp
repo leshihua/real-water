@@ -492,7 +492,8 @@ void WaterMACGrid::reinitializeLevelSet() {
 		int currK =  currUnknown->K;
 		minHeap.pop();
 
-		double minDist = DBL_MAX; // absolute largest double value
+		double minDist = 0.5;
+		//double minDist = DBL_MAX; // absolute largest double value
 		bool inside = isInside(mLSet(currI,currJ,currK));
 		vec3 closestSurfacePoint(0.0,0.0,0.0);
 

@@ -229,7 +229,7 @@ void onDrawCb()
 void init(void)
 {
     initCamera();
-    glClearColor(0.1, 0.1, 0.1, 1.0);
+    glClearColor(0.9, 0.9, 0.9, 1.0);
 
     glEnable(GL_BLEND);
     glEnable(GL_ALPHA_TEST);
