@@ -16,6 +16,7 @@ mmc::FpsTracker theFpsTracker;
 //Our Water Sim
 bool USE_WATER_SIM = true;
 WaterSim theWaterSim;
+int iterations = 0;
 
 // UI Helpers
 int lastX = 0, lastY = 0;
@@ -152,6 +153,7 @@ void onTimerCb(int value)
    if (isRunning) {
 	   if (USE_WATER_SIM) {
 		   theWaterSim.step();
+		   iterations++;
 	   }
 	   else {
 		   theSmokeSim.step();

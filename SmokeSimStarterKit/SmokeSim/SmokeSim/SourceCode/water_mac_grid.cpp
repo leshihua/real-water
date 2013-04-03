@@ -388,6 +388,11 @@ bool isInside(double signedDist) {
 	else return false;
 }
 
+// Helper that takes i,j,k and turns into world coords at center of cell
+vec3 selfToWorld(int i, int j, int k) {
+	double halfCell = theCellSize / 2.0;
+	return vec3(i*theCellSize+halfCell, j*theCellSize+halfCell, k*theCellSize+halfCell);
+}
 
 SignedDistCell::SignedDistCell() {
 	
@@ -407,63 +412,134 @@ SignedDistCell::SignedDistCell(int i, int j, int k, double dist) {
 void WaterMACGrid::reinitializeLevelSet() {
 	// Fast Marching Method: mark surface cells as known, 
 	// add unknown neighbors to minHeap
-
-	std::priority_queue<SignedDistCell, std::vector<SignedDistCell>, GreaterDistance> minHeap;
+	//TODO: UNDO ITERATION CHANGES IN WATER_MAC_GRID.CPP
+	std::priority_queue<SignedDistCell*, std::vector<SignedDistCell*>, GreaterDistance> minHeap;
+	// 1.0 for known, 0.0 for unknown
 	GridData known;
 	known.initialize(0.0);
+	target.mLSet = mLSet;
+	// x,y,z components of closest surface point to mLSet(i,j,k). -> closestX,Y,Z(i,j,k)
+	GridData closestX;
+	closestX.initialize();
+	GridData closestY;
+	closestY.initialize();
+	GridData closestZ;
+	closestZ.initialize();
 
 	// Determines initial cells along the surface and marks as "known"
 	// and marks non-surface cells as "unknown" by adding to minHeap
 	FOR_EACH_CELL {
 		bool currentSign = isInside(mLSet(i,j,k));
+		// will only be marked as known if has a neighbor of opposite sign (near the surface)
+		bool isKnown = false; 
+
+		// find level set gradient at current cell. used for calculating closest surface point
+		vec3 gradAtCell(0.0,0.0,0.0);
+		if (i > 0 && i < theDim[0] && j > 0 && j < theDim[1] && k > 0 && k < theDim[2]) {
+			gradAtCell[0] = (mLSet(i+1,j,k) - mLSet(i-1,j,k)) / theCellSize;
+			gradAtCell[1] = (mLSet(i,j+1,k) - mLSet(i,j-1,k)) / theCellSize;
+			gradAtCell[2] = (mLSet(i,j,k+1) - mLSet(i,j,k-1)) / theCellSize;
+		}
+
+		// checking neighbors in all directions of the current cell
+		for (int iOffset = -1; iOffset <= 1; iOffset++) {
+			for (int jOffset = -1; jOffset <= 1; jOffset++) {
+				for (int kOffset = -1; kOffset <= 1; kOffset++) {
+					// don't check itself, only the neighbors
+					if (iOffset == 0 && jOffset == 0 && kOffset == 0) continue;
+					// don't check cells that are out of bounds
+					if (i+iOffset < 0 || i+iOffset > theDim[0]) continue;
+					if (j+jOffset < 0 || j+jOffset > theDim[1]) continue;
+					if (k+kOffset < 0 || k+kOffset > theDim[2]) continue;
+					
+					// give me the sign of the neighbor I'm looking at (true for inside/negative)
+					bool neighborSign = isInside(mLSet(i+iOffset,j+jOffset,k+kOffset));
+					if (neighborSign != currentSign) { // if they're opposite signs
+						//known(i,j,k) = 1.0; // mark current as known
+						known(i+iOffset,j+jOffset,k+kOffset) = 1.0; // mark neighbor as known
+						isKnown = true;
+					}
+				}
+			}
+		}
 		
-		if (i > 0) {
-			bool neighborSign = isInside(mLSet(i-1,j,k));
-			if (neighborSign != currentSign) {
-				known(i,j,k) = 1.0;
-				known(i-1,j,k) = 1.0;
-			}
-		}
-		if (i < theDim[0])  {
-			bool neighborSign = isInside(mLSet(i+1,j,k));
-			if (neighborSign != currentSign) {
-				known(i,j,k) = 1.0;
-				known(i+1,j,k) = 1.0;
-			}
-		}
-		if (j > 0) {
-			bool neighborSign = isInside(mLSet(i,j-1,k));
-			if (neighborSign != currentSign) {
-				known(i,j,k) = 1.0;
-				known(i,j-1,k) = 1.0;
-			}
-		}
-		if (j < theDim[1])  {
-			bool neighborSign = isInside(mLSet(i,j+1,k));
-			if (neighborSign != currentSign) {
-				known(i,j,k) = 1.0;
-				known(i,j+1,k) = 1.0;
-			}
-		}
-		if (k > 0) {
-			bool neighborSign = isInside(mLSet(i,j,k-1));
-			if (neighborSign != currentSign) {
-				known(i,j,k) = 1.0;
-				known(i,j,k-1) = 1.0;
-			}
-		}
-		if (k < theDim[2])  {
-			bool neighborSign = isInside(mLSet(i,j,k+1));
-			if (neighborSign != currentSign) {
-				known(i,j,k) = 1.0;
-				known(i,j,k+1) = 1.0;
-			}
+		if (isKnown) {
+			known(i,j,k) = 1.0;
+			vec3 currPos = selfToWorld(i,j,k);
+			// compute closest point on surface. x - phi(x) * grad(phi(x)) = closest point
+			vec3 closestPoint = currPos - (mLSet(i,j,k) * gradAtCell);
+			closestX(i,j,k) = closestPoint[0];
+			closestY(i,j,k) = closestPoint[1];
+			closestZ(i,j,k) = closestPoint[2];
+
+		} else { // if none of the neighbors of the current cell had an opposite sign
+			SignedDistCell* unknown = new SignedDistCell(i,j,k,abs(mLSet(i,j,k)));
+			unknown->surfacePoint = vec3();
+			minHeap.push(unknown);
 		}
 
 	}
 
 
+	// for each unknown, check all neighbors adjacent/diagonal to it
+	while (!minHeap.empty()) {
+		SignedDistCell* currUnknown = minHeap.top();
+		int currI =  currUnknown->I;
+		int currJ =  currUnknown->J;
+		int currK =  currUnknown->K;
+		minHeap.pop();
 
+		double minDist = DBL_MAX; // absolute largest double value
+		bool inside = isInside(mLSet(currI,currJ,currK));
+		vec3 closestSurfacePoint(0.0,0.0,0.0);
+
+		// Look at all neighbors in every direction
+		for (int iOffset = -1; iOffset <= 1; iOffset++) {
+			for (int jOffset = -1; jOffset <= 1; jOffset++) {
+				for (int kOffset = -1; kOffset <= 1; kOffset++) {
+					// don't check itself, only the neighbors
+					if (iOffset == 0 && jOffset == 0 && kOffset == 0) continue;
+
+					// if this neighbor is known...
+					if (known(currI+iOffset,currJ+jOffset,currK+kOffset) == 1.0) {
+						//compute the new signed distance
+						vec3 neighborClosestPoint(0.0,0.0,0.0);
+						neighborClosestPoint[0] = closestX(currI+iOffset,currJ+jOffset,currK+kOffset);
+						neighborClosestPoint[1] = closestY(currI+iOffset,currJ+jOffset,currK+kOffset);
+						neighborClosestPoint[2] = closestZ(currI+iOffset,currJ+jOffset,currK+kOffset);
+						double newDist = (selfToWorld(currI,currJ,currK) - neighborClosestPoint).Length();
+						closestSurfacePoint = neighborClosestPoint;
+						// keep finding the min distance to surface from current to neighbor's closest pts
+						if (newDist < minDist) minDist = newDist;
+					}
+				}
+			}
+		}
+		//if (inside)
+		target.mLSet(currI,currJ,currK) = minDist;
+		//else  target.mLSet(currI,currJ,currK) = -1.0 * abs(minDist);
+		closestX(currI,currJ,currK) = closestSurfacePoint[0];
+		closestY(currI,currJ,currK) = closestSurfacePoint[1];
+		closestZ(currI,currJ,currK) = closestSurfacePoint[2];
+
+		// if any of the known neighbors have a higher min dist, mark as unknown
+		for (int iOffset = -1; iOffset <= 1; iOffset++) {
+			for (int jOffset = -1; jOffset <= 1; jOffset++) {
+				for (int kOffset = -1; kOffset <= 1; kOffset++) {
+					if (known(currI+iOffset,currJ+jOffset,currK+kOffset) == 1.0) {
+						if (mLSet(currI+iOffset,currJ+jOffset,currK+kOffset) > minDist) {
+							known(currI+iOffset,currJ+jOffset,currK+kOffset) = 0.0;
+							SignedDistCell* unknown = new SignedDistCell(currI+iOffset,currJ+jOffset,currK+kOffset,abs(mLSet(currI+iOffset,currJ+jOffset,currK+kOffset)));
+							minHeap.push(unknown);
+						}
+					}
+				}
+			}
+		}
+		//currUnknown 
+	}
+
+	mLSet = target.mLSet;
 
 }
 
@@ -554,7 +630,7 @@ void WaterMACGrid::project(double dt)
 	//cout<<currD<<endl;
 
 	//USE AIR CELLS for fluids
-	bool USE_AIR_CELLS = true;
+	bool USE_AIR_CELLS = false;
 	// X FACES
 	FOR_EACH_FACE_X {  
 		//Make sure we aren't on boundaries

@@ -28,6 +28,7 @@ public:
 
 	//Advect the signed distances
 	void advectSignedDistances(double dt);
+	void reinitializeLevelSet();
 
 protected:
 	// Setup:
@@ -37,7 +38,6 @@ protected:
 	void computeGravity(double dt);
 	void computeBuoyancy(double dt);
 	void computeVorticityConfinement(double dt);
-	void reinitializeLevelSet();
 
 	//Solver 
 	bool conjugateGradient(const GridDataMatrix & A, GridData & p, const GridData & d, int maxIterations, double tolerance);
@@ -78,6 +78,7 @@ public:
 	int J;
 	int K;
 	double signedDist;
+	vec3 surfacePoint; // closest surface point
 };
 
 

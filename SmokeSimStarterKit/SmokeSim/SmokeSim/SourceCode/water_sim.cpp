@@ -32,6 +32,7 @@ void WaterSim::step()
    // Step1: Calculate new velocities
    mGrid.advectSignedDistances(dt);
    mGrid.advectVelocity(dt);
+   mGrid.reinitializeLevelSet();
    // Step2: Calculate new temperature
    mGrid.advectTemperature(dt);
    // Step3: Calculate new density 
