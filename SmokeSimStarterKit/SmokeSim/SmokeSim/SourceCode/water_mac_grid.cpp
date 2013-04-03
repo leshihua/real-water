@@ -436,9 +436,10 @@ void WaterMACGrid::reinitializeLevelSet() {
 		// find level set gradient at current cell. used for calculating closest surface point
 		vec3 gradAtCell(0.0,0.0,0.0);
 		if (i > 0 && i < theDim[0] && j > 0 && j < theDim[1] && k > 0 && k < theDim[2]) {
-			gradAtCell[0] = (mLSet(i+1,j,k) - mLSet(i-1,j,k)) / theCellSize;
-			gradAtCell[1] = (mLSet(i,j+1,k) - mLSet(i,j-1,k)) / theCellSize;
-			gradAtCell[2] = (mLSet(i,j,k+1) - mLSet(i,j,k-1)) / theCellSize;
+			gradAtCell[0] = (mLSet(i+1,j,k) - mLSet(i-1,j,k)) / (2 * theCellSize);
+			gradAtCell[1] = (mLSet(i,j+1,k) - mLSet(i,j-1,k)) / (2* theCellSize);
+			gradAtCell[2] = (mLSet(i,j,k+1) - mLSet(i,j,k-1)) / (2 * theCellSize);
+			//cout << gradAtCell << endl;
 		}
 
 		// checking neighbors in all directions of the current cell
@@ -458,6 +459,7 @@ void WaterMACGrid::reinitializeLevelSet() {
 						//known(i,j,k) = 1.0; // mark current as known
 						known(i+iOffset,j+jOffset,k+kOffset) = 1.0; // mark neighbor as known
 						isKnown = true;
+						//cout << "isKnown is true" << endl;
 					}
 				}
 			}
@@ -480,6 +482,7 @@ void WaterMACGrid::reinitializeLevelSet() {
 
 	}
 
+	//cout << "minheap size " << minHeap.size() << endl;
 
 	// for each unknown, check all neighbors adjacent/diagonal to it
 	while (!minHeap.empty()) {
@@ -515,9 +518,9 @@ void WaterMACGrid::reinitializeLevelSet() {
 				}
 			}
 		}
-		//if (inside)
-		target.mLSet(currI,currJ,currK) = minDist;
-		//else  target.mLSet(currI,currJ,currK) = -1.0 * abs(minDist);
+		//cout << minDist << endl;
+		if (inside) target.mLSet(currI,currJ,currK) = -1.0 * minDist;
+		else  target.mLSet(currI,currJ,currK) = abs(minDist);
 		closestX(currI,currJ,currK) = closestSurfacePoint[0];
 		closestY(currI,currJ,currK) = closestSurfacePoint[1];
 		closestZ(currI,currJ,currK) = closestSurfacePoint[2];
