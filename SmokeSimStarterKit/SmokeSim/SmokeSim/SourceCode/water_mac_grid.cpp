@@ -30,6 +30,8 @@ WaterMACGrid::WaterMACGrid(const WaterMACGrid& orig)
    mP = orig.mP;
    mD = orig.mD;
    mT = orig.mT;
+   tallCellHeights = orig.tallCellHeights;
+   terrainHeights = orig.terrainHeights;
 }
 
 WaterMACGrid& WaterMACGrid::operator=(const WaterMACGrid& orig)
@@ -43,7 +45,9 @@ WaterMACGrid& WaterMACGrid::operator=(const WaterMACGrid& orig)
    mW = orig.mW;
    mP = orig.mP;
    mD = orig.mD;
-   mT = orig.mT; 
+   mT = orig.mT;
+   tallCellHeights = orig.tallCellHeights;
+   terrainHeights = orig.terrainHeights;
    return *this;
 }
 
@@ -60,6 +64,9 @@ void WaterMACGrid::reset()
    mD.initialize();
    mT.initialize(0.0);
    mLSet.initialize(0.0);
+   tallCellHeights.initialize(0.0);
+   terrainHeights.initialize(0.0);
+
    setUpAMatrix();
 }
 
@@ -112,6 +119,11 @@ void WaterMACGrid::updateSources()
 		mU(10,18,0) = 10.2;
 		mU(11,19,0) = 10.1;
 		mU(12,20,0) = 10.2;
+
+		
+   terrainHeights(1,2) = 1000;
+    cout<< terrainHeights(1,2);
+
 }
 
 void WaterMACGrid::advectSignedDistances(double dt) {
@@ -492,7 +504,7 @@ void WaterMACGrid::reinitializeLevelSet() {
 		int currK =  currUnknown->K;
 		minHeap.pop();
 
-		double minDist = 0.5;
+		double minDist = 1.0;
 		//double minDist = DBL_MAX; // absolute largest double value
 		bool inside = isInside(mLSet(currI,currJ,currK));
 		vec3 closestSurfacePoint(0.0,0.0,0.0);

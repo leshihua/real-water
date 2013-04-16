@@ -3,6 +3,7 @@
 
 #include "mac_grid.h"
 #include <queue>
+#include "CellData.h"
 
 class WaterMACGrid : public MACGrid {
 public:
@@ -63,7 +64,9 @@ protected:
 	double getSignedDistance(const vec3& pt);
 
 
-
+	//Tall Cell Height & Terrain Height Data
+	CellData tallCellHeights;
+	CellData terrainHeights;
 };
 
 
